@@ -1,0 +1,46 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Report A Problem
+{% endblock %}
+
+{% block main %}
+{%if session["role"] == "Student"%}
+    <form method = "POST">
+        <div class="mb-3 col-4" >
+            <label  class="form-label">Report Title</label>
+            <input type="text" class="form-control" name="title" placeholder="Air conditioning not working" required>
+            <div  class="form-text">Try to be precise</div>
+        </div>
+        <div class="mb-3">
+            <label  class="form-label" required>description</label>
+            <textarea class="form-control" name="description" rows="10" placeholder="Describe the problem in detail with LOCATION" required></textarea>
+        </div>
+        <button type="submit" class="btn btn-dark"> REPORT </button>
+</form>
+{%elif session["role"] =="Officer"%}
+    <table class="table table-striped">
+  <thead>
+    <tr>
+      <th scope="col">#</th>
+      <th scope="col">Title</th>
+      <th scope="col">Time Added</th>
+      <th scope="col">Status</th>
+      <th scope="col">Description</th>
+    </tr>
+  </thead>
+  <tbody class="table-group-divider">
+    {%for row in rows%}
+    <tr>
+      <th scope="row">{{loop.index}}</th>
+      <td>{{row["title"]}}</td>
+      <td>{{row["date_reported"]}}</td>
+      <td>{{row["status"]}}</td>
+      <td>{{row["description"]}}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+{%endif%}
+{% endblock %}

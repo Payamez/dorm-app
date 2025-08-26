@@ -1,0 +1,13 @@
+* {
+    box-sizing: border-box; /* Ensure box-sizing is consistent */
+}
+body {
+    padding-bottom: 5px;
+    background-color: #cc0100;
+    font-family: Arial, sans-serif;
+    color: #000000;
+    font-size: 1.5rem; /* Relative font size */
+    font-weight: 400;
+    line-height: 1.5;
+    margin: 0;
+}

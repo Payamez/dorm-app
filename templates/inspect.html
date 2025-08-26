@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>DB Inspection</title>
+</head>
+<body>
+    <h1>Database Inspection</h1>
+    {% for table in db_info %}
+        <h2>Table: {{ table.table }}</h2>
+        <h3>Columns:</h3>
+        <ul>
+            {% for col in table.columns %}
+                <li>{{ col[1] }} ({{ col[2] }})</li>
+            {% endfor %}
+        </ul>
+        <h3>Sample Rows:</h3>
+        <ul>
+            {% for row in table.rows %}
+                <li>{{ row }}</li>
+            {% endfor %}
+            {% if table.rows|length == 0 %}
+                <li>No data in this table.</li>
+            {% endif %}
+        </ul>
+        <hr>
+    {% endfor %}
+</body>
+</html>

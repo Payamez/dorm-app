@@ -1,0 +1,50 @@
+{% extends "layout.html" %}
+
+
+{% block title %}
+    Home Page
+{% endblock %}
+
+{% block main %}
+    <form method = "POST">
+        <div class="mb-3 col-6">
+            <label class="form-label">Email address</label>
+            <input type="email" class="form-control" name="mail" placeholder="eXXXXX.metu.edu.tr" required>
+            <div id="emailHelp" class="form-text">We'll never share your email with anyone else.</div>
+        </div>
+        <div class="mb-3 col-6">
+            <label class="form-label" required>Password</label>
+            <input type="password" class="form-control" name="password">
+        </div>
+        <div class="mb-3 col-6">
+            <label class="form-label" required> Confirm Password </label>
+            <input type="password" class="form-control" name="confirmation">
+        </div>
+        <div class="mb-3 col-6">
+            <label class="form-label" required>Name and Surname</label>
+            <input type="text" class="form-control" name="name">
+        </div>
+        <div class="mb-3 col-6">
+            <label class="form-label">Role</label>
+            <select class="form-select form-select-sm" name="role">
+                <option selected disabled="">select</option>
+                <option> Student </option>
+                <option> Officer </option>    
+            </select>
+        </div>    
+        <div class="mb-3 col-6">
+            <label class="form-label">Which dorm</label>
+            <select class="form-select form-select-sm" name="dorm">
+                <option selected disabled="">select</option>
+                {%for dorm in dormitories%}
+                <option value="{{dorm['name']}}">{{dorm['name']}}</option>
+                {%endfor%}
+            </select>
+        </div>    
+        <div class="mb-3 col-6">
+            <label class="form-label" required>Room number</label>
+            <input type="number" class="form-control" name="room_number">
+        </div>
+        <button type="submit" class="btn btn-dark">Register !</button>
+</form>
+{% endblock %}
