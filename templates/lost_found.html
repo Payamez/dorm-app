@@ -1,0 +1,74 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Home Page
+{% endblock %}
+
+{% block main %}
+     <form method = "POST">
+        <div class="mb-3 col-6">
+            <label class="form-label"> Add a Lost Item</label>
+            <input type="text" class="form-control" name="item_description" required placeholder="for example: Lost Card with student Number eXXXXX">
+        </div>
+        <button type="submit" class="btn btn-dark">Add!</button>
+    </form>
+  <br>
+  <br>
+  
+    <table class="table table-hover">
+  <thead>
+    <tr>
+      <th scope="col">#</th>
+      <th scope="col">All Lost Items</th>
+      <th scope="col">Time Added</th>
+      <th scope="col"> </th>
+    </tr>
+  </thead>
+  <tbody class="table-group-divider">
+     {%for row in rows%}
+    <tr>
+      <th scope="row">{{loop.index}}</th>
+      <td>{{row["item_description"]}}</td>
+      <td></span>{{row["date_reported"]}}</td>
+      <td><a href="https://mail.google.com/mail/?view=cm&fs=1&to={{ row['email'] }}&su=About your lost item&body=Hello, I think I found your item." 
+            target="_blank" 
+            class="btn btn-primary btn-sm">
+   Contact Owner
+</a></td>
+    </tr>
+    {% endfor %}
+  </tbody>
+
+</table>
+<br><br><br>
+<table class="table table-dark table-hover">
+  <thead>
+    <tr>
+      <th scope="col">#</th>
+      <th scope="col">Your Lost Items</th>
+      <th scope="col">Time Added</th>
+      <th scope="col">Status</th>
+      <th scope="col"> </th>
+    </tr>
+  </thead>
+  <tbody class="table-group-divider">
+     {%for row in rows%}
+     {%if row["user_id"] == session["user_id"]%}
+    <tr>
+      <th scope="row">{{loop.index}}</th>
+      <td>{{row["item_description"]}}{{message}}</td>
+      <td>{{row["date_reported"]}}</td>
+      <td>{{row["status"]}}</td>
+      <td>
+                <form method="POST" action="/mark_found">
+                    <input type="hidden" name="item_id" value="{{ row['id'] }}">
+                    <button type="submit" class="btn btn-danger btn-sm">I FOUND IT</button>
+                </form>
+      </td>
+    </tr>
+    {%endif%}
+    {% endfor %}
+  </tbody>
+  
+</table>
+{% endblock %}

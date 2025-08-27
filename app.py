@@ -48,9 +48,11 @@ def init_db():
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS announcements(
             id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
             title TEXT,
             message TEXT,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (user_id) REFERENCES userss(id)
         )
     """)
     cursor.execute( """CREATE TABLE IF NOT EXISTS problems (
@@ -237,7 +239,69 @@ def report():
             return render_template("report.html",rows=rows)
 
 
+@app.route("/lost_and_found", methods=["GET", "POST"])
+@login_required
+def lost_and_found():
+    if request.method == "POST":
+        item = request.form.get("item_description")
 
+        if not item:
+            return apology("must provide item description",400)
+        db = get_db()
+             #Execute query safely
+        cursor = db.execute( "INSERT INTO lost_and_found (user_id,item_description) VALUES (?, ?)",
+            (session["user_id"],item))
+        db.commit()
+        return redirect("/lost_and_found")
+
+    else:
+        db = get_db()
+             #Execute query safely
+        cursor = db.execute( "SELECT lost_and_found.id, lost_and_found.item_description, lost_and_found.status, lost_and_found.date_reported, lost_and_found.user_id, userss.email, userss.name FROM lost_and_found JOIN userss ON lost_and_found.user_id = userss.id WHERE lost_and_found.status = 'lost'")
+        rows = cursor.fetchall()
+        return render_template("lost_found.html",rows=rows)
+@app.route("/mark_found", methods=["POST"])
+def mark_found():
+    item_id = request.form.get("item_id")
+    db = get_db()
+    db.execute(
+        "UPDATE lost_and_found SET status='found' WHERE id=?",
+        (item_id,)
+    )
+    db.commit()
+    return redirect("/lost_and_found")    
+
+
+@app.route("/announcements",methods=["GET", "POST"])
+@login_required
+def announcements():
+    if request.method == "POST":
+        title = request.form.get("title")
+        message = request.form.get("message")
+        if not title or not message:
+            return apology("no title - message :(")
+        
+        db = get_db()
+        db.execute(
+        "INSERT INTO announcements (title,message,user_id) VALUES (?,?,?)",
+        (title,message,session["user_id"])
+        )
+        db.commit()
+        return redirect("/announcements")
+    else:
+        db = get_db()
+             #Execute query safely
+        cursor = db.execute( "SELECT userss.dorm_number as dorm, announcements.id AS announcement_id, announcements.title, announcements.message, announcements.created_at, userss.name AS posted_by " \
+        "FROM announcements JOIN userss ON announcements.user_id = userss.id WHERE userss.dorm_number = ? ORDER BY announcements.id DESC;",(session["dorm"],))
+        rows = cursor.fetchall()
+        rows_dicts = [dict(row) for row in rows]
+        for row in rows_dicts:
+         words = row["message"].split()        
+         if len(words) > 10:
+            row["preview"] = " ".join(words[:10]) + "..."
+         else:
+            row["preview"] = row["message"]
+        return render_template("announcements.html",rows=rows_dicts)
 if __name__ == "__main__":
     app.run(debug=True)
     

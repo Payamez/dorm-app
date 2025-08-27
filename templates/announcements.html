@@ -1,0 +1,45 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Home Page
+{% endblock %}
+
+{% block main %}
+    {% if session["role"] == "Officer"%}
+    <form method = "POST">
+        <div class="mb-3 col-6">
+            <label  class="form-label">Title</label>
+            <input type="text" class="form-control" name="title" required>
+        </div>
+        <div class="mb-3 col-6">
+            <label class="form-label" required>message</label>
+            <textarea class="form-control" name="message" rows="10" placeholder="Describe the problem in detail with LOCATION" required></textarea>
+        </div>
+        <button type="submit" class="btn btn-dark">Announce!</button>
+    </form>
+    {%else%}
+    <table class="table table-hover">
+        <thead>
+            <tr>
+            <th>#</th>
+            <th>Title</th>
+            <th>Message Preview</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in rows %}
+            <tr>
+                <td>{{ loop.index }}</td>
+                <td>{{ row["title"] }}</td>
+                <td>
+                <a href="/announcement/{{ row['announcement_id'] }}">
+                    {{ row["preview"] }}
+                </a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    {%endif%}
+{% endblock %}

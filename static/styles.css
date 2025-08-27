@@ -11,3 +11,17 @@ body {
     line-height: 1.5;
     margin: 0;
 }
+.table {
+  border-radius: 15px;
+  overflow: hidden;
+}
+footer {
+  margin-top: auto; /* pushes footer to the bottom */
+  color: rgba(248, 249, 250, 0.6); 
+}
+.footer-bottom {
+  background-color: #0000001d; /* dark background */
+}
+.footer-bottom .blockquote-footer {
+  color: #f8f9fa9b; /* light text */
+}
