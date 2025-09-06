@@ -27,16 +27,25 @@
       <th scope="col">Time Added</th>
       <th scope="col">Status</th>
       <th scope="col">Description</th>
+      <th scope="col"></th>
     </tr>
   </thead>
   <tbody class="table-group-divider">
     {%for row in rows%}
-    <tr>
+    <tr class="{{ 'closed-text' if row['status'] == 'closed' else '' }}">
       <th scope="row">{{loop.index}}</th>
       <td>{{row["title"]}}</td>
       <td>{{row["date_reported"]}}</td>
       <td>{{row["status"]}}</td>
       <td>{{row["description"]}}</td>
+      <td><a href="https://mail.google.com/mail/?view=cm&fs=1&to={{ row['email'] }}&su=About your lost item&body=Hello, I think I found your item." 
+            target="_blank" 
+            class="btn btn-primary btn-sm">
+      Contact The reporter
+    </a> <form method="POST" action="/change_status">
+                    <input type="hidden" name="problem_id" value="{{ row['id'] }}">
+                    <button type="submit" class="btn btn-success">CHANGE STATUS</button>
+                </form></td>
     </tr>
     {% endfor %}
   </tbody>

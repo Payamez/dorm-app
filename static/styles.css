@@ -25,3 +25,24 @@ footer {
 .footer-bottom .blockquote-footer {
   color: #f8f9fa9b; /* light text */
 }
+a {
+  color: rgb(0, 0, 0);
+  background-color: transparent;
+  text-decoration: none;
+}
+
+#link_announcement:visited {
+  color: pink;
+  background-color: transparent;
+  text-decoration: none;
+}
+
+a:hover {
+  color: red;
+  background-color: transparent;
+}
+.closed-text td, 
+.closed-text th {
+  color: #888888;      /* lighter gray */
+  font-style: italic;   /* optional */
+}

@@ -1,0 +1,13 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Home Page
+{% endblock %}
+
+{% block main %}
+    <h2 class="display-3"><em>{{row["title"]}}</em></h2>
+    <p>{{row["message"]}}</p>
+    <small>Posted on: {{row["created_at"]}}</small>
+    <br><br>
+    <a href="{{ url_for('announcements') }}" class="btn btn-light">Back to Announcements</a>
+{% endblock %}

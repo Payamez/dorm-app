@@ -216,6 +216,7 @@ def register():
 
 
 @app.route("/report_problem", methods=["GET", "POST"])
+@login_required
 def report():
     if request.method == "POST":
         if session["role"] == "Student":
@@ -234,10 +235,18 @@ def report():
     else:    
             db = get_db()
              #Execute query safely
-            cursor = db.execute( "SELECT * FROM problems WHERE dorm= ?",(session["dorm"],))
+            cursor = db.execute( "SELECT problems.id as id, problems.title as title, problems.description as description, problems.status as status, problems.date_reported as date_reported,userss.email as email FROM problems JOIN userss ON userss.id = problems.user_id  WHERE dorm= ?",(session["dorm"],))
             rows = cursor.fetchall()
             return render_template("report.html",rows=rows)
-
+@app.route("/change_status",methods=["POST"])
+def change_status():
+    problem_id = request.form.get("problem_id")
+    if not problem_id:
+        return apology("could not find the problem :(")
+    db = get_db()
+    cursor = db.execute(" UPDATE problems SET status = CASE  WHEN status = 'open' THEN 'closed'  ELSE 'open' END WHERE id = ?",(problem_id,))
+    db.commit()
+    return redirect("/report_problem")
 
 @app.route("/lost_and_found", methods=["GET", "POST"])
 @login_required
@@ -302,6 +311,31 @@ def announcements():
          else:
             row["preview"] = row["message"]
         return render_template("announcements.html",rows=rows_dicts)
+@app.route("/announcement/<int:announcement_id>")
+def announcement(announcement_id):
+    db = get_db()
+
+    row = db.execute(
+        "SELECT * FROM announcements WHERE id = ?", (announcement_id,)
+    ).fetchone()
+
+    if row is None:
+        return apology("Announcement not found", 404)
+
+    # Pass the row to the template
+    return render_template("announcements_detail.html", row=row)
+@app.route("/announcement_delete", methods=["POST"])
+def announcement_delete():
+    announcement_id = request.form.get("announcement_id")
+    if not announcement_id:
+        return apology("could not find the announcement id")
+    db = get_db()
+    db.execute(
+        "DELETE FROM announcements WHERE  id=?",
+        (announcement_id,)
+    )
+    db.commit()
+    return redirect("/announcements") 
 if __name__ == "__main__":
     app.run(debug=True)
     
