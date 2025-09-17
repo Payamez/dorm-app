@@ -6,8 +6,8 @@ from werkzeug.security import check_password_hash, generate_password_hash
 from helpers import apology, login_required
 from helpers import dormitories, dormitory_names, laundry_time_intervals
 from sql import init_db
-
-
+from datetime import date,timedelta
+import json
 app = Flask(__name__)
 DATABASE = "dormapp.db"
 app.config["SESSION_PERMANENT"] = False
@@ -277,18 +277,47 @@ def announcement_delete():
     )
     db.commit()
     return redirect("/announcements") 
-@app.route("/laundry",methods=["GET", "POST"])
+
+# BY FAR THE HARDEST PART OF PROJECT - LAUNDRY RESERVATION
+@app.route("/laundry", defaults={"day": "today"}, methods=["GET", "POST"])
+@app.route("/laundry/<day>", methods=["GET", "POST"])
 @login_required
-def laundry():
+def laundry(day):
     if request.method == "POST":
         return redirect("/")
     else:
+        if day == "today":
+             date = date.today()
+        elif day == "tomorrow":
+           date = date.today() + timedelta(days=1)
+        elif day == "day_after_tomorrow":
+              date = date.today() + timedelta(days=2)
         db = get_db()
-        cursor = db.execute(
-            "SELECT * FROM laundry_machines where dorm = (?)",(session['dorm'],)
-        )
-        rows = cursor.fetchall()
-        return render_template("laundry.html",laundry_time_intervals = laundry_time_intervals,rows=rows)
+        laundry_machines = db.execute(
+            "SELECT * FROM laundry_machines WHERE dorm = (?)",(session['dorm'],)
+        ).fetchall()
+        # I should have store dorm_id in session not name :( 
+        dorm_row = db.execute(
+         "SELECT id FROM dormitories WHERE name = ?",    (session['dorm'],)).fetchone()
+        dorm_id = dorm_row["id"]
+        # all this since seaarching id is better than text 
+        requests = db.execute(
+            "SELECT * FROM laundry_requests WHERE dorm_id = ? AND date = ?",(dorm_id,date)
+        ).fetchall()
+        availability_dict = [] #gonna send this to web and create table based on this
+        for machine in laundry_machines:
+             availability_dict[machine["id"]] = {}  # inner dict: time_interval -> 1
+             for time in laundry_time_intervals:
+                  availability_dict[machine["id"]][time] = 1
+        if not requests:
+            return render_template("laundry.html",day=day,availability_dict=availability_dict)
+
+
+        #checking availabaility for each time interval for each machine in selected date and dorm
+        
+                
+                
+        return render_template("laundry.html",laundry_time_intervals = laundry_time_intervals,rows=laundry_machines)
 @app.route("/add_machine", methods=["POST"])
 def add_machine():
     machine_name = request.form.get("machine_name")
