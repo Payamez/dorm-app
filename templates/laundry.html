@@ -1,0 +1,81 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Laundry
+{% endblock %}
+
+{% block main %}
+    {%if session['role'] == "Student"%}
+    <h2 class = "h2">YOU CAN MAKE A RESERVATION FOR YOUR LAUNDRY HERE</h2>
+    <br>
+    <form method = "POST">
+        <div class="mb-3 col-6">
+             <label >Date (default is today)</label>
+             <select class="form-select">
+                <option selected value="today">today</option>
+                <option value="tommorow">tommorow</option>
+                <option value="after_tommorow">after tommorow</option>
+             </select>
+        </div>
+    </form>
+    <div class="container mt-4">
+  <div class="row g-3">
+    
+    <!-- Machine Card Example, I asked gpt for bootstap layout -->
+
+    <div class="col-sm-6 col-md-4 col-lg-3">
+      <div class="card shadow-sm">
+        <div class="card-header text-center fw-bold">
+          Machine 1
+        </div>
+        <div class="card-body">
+          <div class="list-group">
+            <button class="list-group-item list-group-item-action list-group-item-success">
+              08:00 - 09:00 (Available)
+            </button>
+            <button class="list-group-item list-group-item-action list-group-item-danger" disabled>
+              09:00 - 10:00 (Reserved)
+            </button>
+            <button class="list-group-item list-group-item-action list-group-item-secondary" disabled>
+              10:00 - 11:00 (Past)
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+    {%else%}
+        <form method = "POST" action ="/add_machine">
+        <div class="mb-3 col-4" >
+            <label  class="form-label">ADD NEW MACHINE</label>
+            <input type="text" class="form-control" name="machine_name" placeholder="Machine 5" required>
+            <div  class="form-text">Try to be precise</div>
+        </div>
+        <button type="submit" class="btn btn-dark"> ADD </button>
+    </form>
+    <br><br>
+    <table class="table">
+  <thead>
+    <tr>
+      <th scope="col">#</th>
+      <th scope="col">Machine Name</th>
+      <th scope="col">Status</th>
+      <th scope="col"></th>
+    </tr>
+  </thead>
+  <tbody>
+    {%for row in rows%}
+    <tr class="{{ 'closed-text' if row['status'] == 'broken' else '' }}">
+      <th scope="row">{{loop.index}}</th>
+      <td>{{row['machine_name']}}</td>
+      <td>{{row['status']}}</td>
+      <td> <form method="POST" action="/change_status_laundry">
+                    <input type="hidden" name="machine_id" value="{{ row['id'] }}">
+                    <button type="submit" class="btn btn-danger">CHANGE STATUS</button>
+                </form>
+      </td>
+    </tr>
+    {%endfor%}
+  </tbody>
+</table>
+    {%endif%}
+{% endblock %} 

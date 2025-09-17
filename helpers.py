@@ -43,6 +43,16 @@ dormitories = [
     {"name": "15. Guest House", "gender": "male", "occupancy": "single/double/triple/quadruple"},
     {"name": "16. Guest House", "gender": "female", "occupancy": "single/double/triple/quadruple"},
 ]
+laundry_time_intervals = {
+    1: "08:00-10:00",
+    2: "10:00-12:00",
+    3: "12:00-14:00",
+    4: "14:00-16:00",
+    5: "16:00-18:00",
+    6: "18:00-20:00",
+    7: "20:00-22:00",
+    8: "22:00-00:00"
+}
 def apology(message, code=400):
     """Render message as an apology to user."""
 

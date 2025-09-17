@@ -4,7 +4,8 @@ from flask import Flask, flash, redirect, render_template, request, session,g
 from flask_session import Session
 from werkzeug.security import check_password_hash, generate_password_hash
 from helpers import apology, login_required
-from helpers import dormitories, dormitory_names
+from helpers import dormitories, dormitory_names, laundry_time_intervals
+from sql import init_db
 
 
 app = Flask(__name__)
@@ -27,66 +28,6 @@ def close_db(exception):
     if db is not None:
         db.close()
 
-# --- Initialize tables ---
-def init_db():
-    db = sqlite3.connect(DATABASE)
-    cursor = db.cursor()
-
-    # Create tables
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS userss(
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT,
-            email TEXT UNIQUE,
-            dorm_number TEXT,
-            room_number INTEGER,
-            role TEXT,
-            password_hashed TEXT
-        )
-    """)
-
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS announcements(
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id INTEGER NOT NULL,
-            title TEXT,
-            message TEXT,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (user_id) REFERENCES userss(id)
-        )
-    """)
-    cursor.execute( """CREATE TABLE IF NOT EXISTS problems (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    user_id INTEGER NOT NULL,
-    dorm TEXT,
-    title TEXT NOT NULL,
-    description TEXT NOT NULL,
-    status TEXT DEFAULT 'open',
-    date_reported TEXT DEFAULT (datetime('now')),
-    FOREIGN KEY (user_id) REFERENCES userss(id)
-    )""")
-    
-    cursor.execute("""CREATE TABLE IF NOT EXISTS laundry_schedule (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    user_id INTEGER NOT NULL,
-    date TEXT NOT NULL,
-    time_slot TEXT NOT NULL,
-    status TEXT DEFAULT 'booked',
-    FOREIGN KEY (user_id) REFERENCES userss(id)
-    )""")
-    
-    cursor.execute("""CREATE TABLE IF NOT EXISTS lost_and_found (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    location TEXT,
-    user_id INTEGER NOT NULL,
-    item_description TEXT NOT NULL,
-    status TEXT DEFAULT 'lost',
-    date_reported TEXT DEFAULT (datetime('now')),
-    FOREIGN KEY (user_id) REFERENCES userss(id)
-    )""")
-
-    db.commit()
-    db.close()
 
 # --- Run init once at startup ---
 with app.app_context():
@@ -336,6 +277,39 @@ def announcement_delete():
     )
     db.commit()
     return redirect("/announcements") 
+@app.route("/laundry",methods=["GET", "POST"])
+@login_required
+def laundry():
+    if request.method == "POST":
+        return redirect("/")
+    else:
+        db = get_db()
+        cursor = db.execute(
+            "SELECT * FROM laundry_machines where dorm = (?)",(session['dorm'],)
+        )
+        rows = cursor.fetchall()
+        return render_template("laundry.html",laundry_time_intervals = laundry_time_intervals,rows=rows)
+@app.route("/add_machine", methods=["POST"])
+def add_machine():
+    machine_name = request.form.get("machine_name")
+    if not machine_name:
+        return apology("machine name can not be empty")
+    db = get_db()
+    db.execute(
+        "INSERT INTO laundry_machines(dorm,machine_name) values (?,?)",
+        (session['dorm'],machine_name)
+    )
+    db.commit()
+    return redirect("/laundry")     
+@app.route("/change_status_laundry",methods=["POST"])
+def change_status_laundry():
+    machine_id = request.form.get("machine_id")
+    if not machine_id:
+        return apology("could not find the machine :(")
+    db = get_db()
+    db.execute(" UPDATE laundry_machines SET status = CASE  WHEN status = 'working' THEN 'broken'  ELSE 'working' END WHERE id = ?",(machine_id,))
+    db.commit()
+    return redirect("/laundry")
 if __name__ == "__main__":
     app.run(debug=True)
     
