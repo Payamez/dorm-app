@@ -6,7 +6,7 @@ from werkzeug.security import check_password_hash, generate_password_hash
 from helpers import apology, login_required
 from helpers import dormitories, dormitory_names, laundry_time_intervals
 from sql import init_db
-from datetime import date,timedelta
+from datetime import date,timedelta,datetime
 import json
 app = Flask(__name__)
 DATABASE = "dormapp.db"
@@ -240,7 +240,7 @@ def announcements():
         return redirect("/announcements")
     else:
         db = get_db()
-             #Execute query safely
+        
         cursor = db.execute( "SELECT userss.dorm_number as dorm, announcements.id AS announcement_id, announcements.title, announcements.message, announcements.created_at, userss.name AS posted_by " \
         "FROM announcements JOIN userss ON announcements.user_id = userss.id WHERE userss.dorm_number = ? ORDER BY announcements.id DESC;",(session["dorm"],))
         rows = cursor.fetchall()
@@ -284,40 +284,65 @@ def announcement_delete():
 @login_required
 def laundry(day):
     if request.method == "POST":
-        return redirect("/")
+        db = get_db()
+        if day == "today":
+             selected_date = date.today()
+        elif day == "tomorrow":
+           selected_date = date.today() + timedelta(days=1)
+        elif day == "after_tomorrow":
+              selected_date = date.today() + timedelta(days=2)
+        machine_id = request.form.get("machine_id")
+        time_id = request.form.get("time_id")
+        other_reservations = db.execute("SELECT * from laundry_requests WHERE user_id = (?) and date BETWEEN (?) and (?)",
+                                        (session['user_id'],date.today(),date.today() + timedelta(days=2))
+                    ).fetchall()
+        if len(other_reservations) > 3:
+            return apology("you can only reserve 3 times in 3 days :(")
+        try:
+            dorm_row = db.execute(
+            "SELECT id FROM dormitories WHERE name = ?",(session['dorm'],)).fetchone()
+            dorm_id = dorm_row["id"]
+            db.execute("INSERT INTO laundry_requests (dorm_id,user_id,machine_id,time_interval_id,date) VALUES (?,?,?,?,?)",(dorm_id,session['user_id'],machine_id,time_id,selected_date)
+            )
+            db.commit()
+        except sqlite3.IntegrityError:
+            return apology("it is alreaday reserved :(")
+        return redirect("/laundry")
     else:
         if day == "today":
-             date = date.today()
+             selected_date = date.today()
         elif day == "tomorrow":
-           date = date.today() + timedelta(days=1)
-        elif day == "day_after_tomorrow":
-              date = date.today() + timedelta(days=2)
+           selected_date = date.today() + timedelta(days=1)
+        elif day == "after_tomorrow":
+              selected_date = date.today() + timedelta(days=2)
         db = get_db()
         laundry_machines = db.execute(
-            "SELECT * FROM laundry_machines WHERE dorm = (?)",(session['dorm'],)
+            "SELECT * FROM laundry_machines WHERE dorm = (?) and status ='working'",(session['dorm'],)
         ).fetchall()
         # I should have store dorm_id in session not name :( 
         dorm_row = db.execute(
-         "SELECT id FROM dormitories WHERE name = ?",    (session['dorm'],)).fetchone()
+         "SELECT id FROM dormitories WHERE name = ?",(session['dorm'],)).fetchone()
         dorm_id = dorm_row["id"]
         # all this since seaarching id is better than text 
         requests = db.execute(
-            "SELECT * FROM laundry_requests WHERE dorm_id = ? AND date = ?",(dorm_id,date)
+            "SELECT * FROM laundry_requests WHERE dorm_id = ? AND date = ?",(dorm_id,selected_date)
         ).fetchall()
-        availability_dict = [] #gonna send this to web and create table based on this
+        availability_dict = {} #gonna send this to web and create table based on this
         for machine in laundry_machines:
-             availability_dict[machine["id"]] = {}  # inner dict: time_interval -> 1
+             availability_dict[machine["id"]] = {}  
              for time in laundry_time_intervals:
-                  availability_dict[machine["id"]][time] = 1
-        if not requests:
-            return render_template("laundry.html",day=day,availability_dict=availability_dict)
+                starting_time = int(laundry_time_intervals[time][0:2])
+                now = datetime.now()
+                current_hour = now.hour
+                if day == "today" and current_hour >= starting_time:
+                    availability_dict[machine["id"]][time] = 2 #passed :(
+                else:
+                    availability_dict[machine["id"]][time] = 1 #spot is free
 
-
-        #checking availabaility for each time interval for each machine in selected date and dorm
-        
-                
-                
-        return render_template("laundry.html",laundry_time_intervals = laundry_time_intervals,rows=laundry_machines)
+        for r in requests:
+            availability_dict[r["machine_id"]][r["time_interval_id"]] = 0 #available
+            
+        return render_template("laundry.html",intervals = laundry_time_intervals,machines=laundry_machines,availability=availability_dict,)
 @app.route("/add_machine", methods=["POST"])
 def add_machine():
     machine_name = request.form.get("machine_name")

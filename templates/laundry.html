@@ -8,41 +8,61 @@
     {%if session['role'] == "Student"%}
     <h2 class = "h2">YOU CAN MAKE A RESERVATION FOR YOUR LAUNDRY HERE</h2>
     <br>
-    <form method = "POST">
-        <div class="mb-3 col-6">
-             <label >Date (default is today)</label>
-             <select class="form-select">
-                <option selected value="today">today</option>
-                <option value="tommorow">tommorow</option>
-                <option value="after_tommorow">after tommorow</option>
-             </select>
-        </div>
-    </form>
-    <div class="container mt-4">
-  <div class="row g-3">
-    
-    <!-- Machine Card Example, I asked gpt for bootstap layout -->
 
-    <div class="col-sm-6 col-md-4 col-lg-3">
-      <div class="card shadow-sm">
+      <div class="d-flex gap-2">
+        <a href="/laundry/today" class="btn btn-dark">Today</a>
+        <a href="/laundry/tomorrow" class="btn btn-dark">Tomorrow</a>
+        <a href="/laundry/after_tomorrow" class="btn btn-dark">Day After Tomorrow</a>
+      </div>
+
+    <br><br>
+    <!-- Machine Card Example, I asked gpt for bootstap layout -->
+   <div class="row g-3">
+  {% for m in machines %}
+    <div class="col-12 col-md-6 col-lg-4 d-flex">
+      <div class="card shadow-sm w-100">
         <div class="card-header text-center fw-bold">
-          Machine 1
+          {{ m.machine_name }}
         </div>
         <div class="card-body">
           <div class="list-group">
-            <button class="list-group-item list-group-item-action list-group-item-success">
-              08:00 - 09:00 (Available)
-            </button>
-            <button class="list-group-item list-group-item-action list-group-item-danger" disabled>
-              09:00 - 10:00 (Reserved)
-            </button>
-            <button class="list-group-item list-group-item-action list-group-item-secondary" disabled>
-              10:00 - 11:00 (Past)
-            </button>
+            {% for t_id, t_label in intervals.items() %}
+              {% set status = availability[m.id][t_id] %}
+              {% if status == 1 %}
+                <!-- Available -->
+                 <form method="POST" onsubmit="return confirmBooking('{{ m.machine_name }}', '{{ selected_date }}', '{{ t_label }}')">
+                      <input type="hidden" name="machine_id" value="{{ m.id }}">
+                      <input type="hidden" name="time_id" value="{{ t_id }}">
+                      <button type="submit" class="list-group-item list-group-item-action list-group-item-success">
+                        {{ t_label }} (Available)
+                      </button>
+                </form>
+
+                <script>
+                function confirmBooking(machineName, date, timeLabel) {
+                    return confirm(`Are you sure you want to book ${machineName} on ${date} at ${timeLabel}?`);
+                }
+                </script>
+                                  
+              {% elif status == 0 %}
+                <!-- Reserved -->
+                <button class="list-group-item list-group-item-action list-group-item-danger" disabled>
+                  {{ t_label }} (Reserved)
+                </button>
+              {% else %}
+                <!-- Past -->
+                <button class="list-group-item list-group-item-action list-group-item-secondary" disabled>
+                  {{ t_label }} (Past)
+                </button>
+              {% endif %}
+            {% endfor %}
           </div>
         </div>
       </div>
     </div>
+  {% endfor %}
+</div>
+
     {%else%}
         <form method = "POST" action ="/add_machine">
         <div class="mb-3 col-4" >
@@ -63,7 +83,7 @@
     </tr>
   </thead>
   <tbody>
-    {%for row in rows%}
+    {%for row in machines%}
     <tr class="{{ 'closed-text' if row['status'] == 'broken' else '' }}">
       <th scope="row">{{loop.index}}</th>
       <td>{{row['machine_name']}}</td>
