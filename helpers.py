@@ -1,6 +1,6 @@
 from flask import redirect, render_template, session
 from functools import wraps
-
+from datetime import date,timedelta,datetime
 dormitory_names = [
     "Dormitory 1",
     "Dormitory 2",
@@ -92,3 +92,19 @@ def login_required(f):
         return f(*args, **kwargs)
 
     return decorated_function
+def is_it_passed(starting_date=None, starting_hour=None):
+    if isinstance(starting_date, str):
+        starting_date = datetime.strptime(starting_date, "%Y-%m-%d").date() #by default date is string from db
+    if isinstance(starting_hour, str):
+        starting_hour = int(starting_hour[0:2])
+    now = datetime.now()
+    current_date = now.date()
+    
+    # If the date has passed, return True
+    if current_date > starting_date:
+        return 1
+    elif current_date == starting_date and starting_hour is not None:
+        # If the date is today, check the hour
+        if now.hour >= starting_hour:
+            return 1
+    return 0

@@ -6,17 +6,17 @@ from werkzeug.security import check_password_hash, generate_password_hash
 from helpers import apology, login_required
 from helpers import dormitories, dormitory_names, laundry_time_intervals
 from sql import init_db
-from datetime import date,timedelta,datetime
+
 
 conn = sqlite3.connect("dormapp.db")
 cursor = conn.cursor()
 
 
 
+laundry_machines = cursor.execute(
+            "SELECT * FROM laundry_machines WHERE dorm = 'Dormitory 8'").fetchall()
 
 conn.commit()
 conn.close()
 
-now = datetime.now()
-current_hour = now.hour
-print(current_hour)
+print(laundry_machines)

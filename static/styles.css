@@ -46,3 +46,25 @@ a:hover {
   color: #888888;      /* lighter gray */
   font-style: italic;   /* optional */
 }
+
+.disabled-card .card {
+  opacity: 0.8;
+  filter: grayscale(30%);
+  transition: opacity 150ms ease;
+  pointer-events: none;
+}
+
+.disabled-card .card-header {
+  color: #6c757d;
+  font-style: italic;
+  cursor: not-allowed;
+}
+
+.disabled-card .list-group-item {
+  background-color: #cececece;
+  color: #6c757d;
+  border-color: #e9ecef;
+}
+.card-body .list-group-item{
+  border-color: whitesmoke
+}

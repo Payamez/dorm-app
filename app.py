@@ -3,7 +3,7 @@ import sqlite3
 from flask import Flask, flash, redirect, render_template, request, session,g
 from flask_session import Session
 from werkzeug.security import check_password_hash, generate_password_hash
-from helpers import apology, login_required
+from helpers import apology, login_required, is_it_passed
 from helpers import dormitories, dormitory_names, laundry_time_intervals
 from sql import init_db
 from datetime import date,timedelta,datetime
@@ -286,16 +286,19 @@ def laundry(day):
     if request.method == "POST":
         db = get_db()
         if day == "today":
-             selected_date = date.today()
+            selected_date = date.today()
         elif day == "tomorrow":
-           selected_date = date.today() + timedelta(days=1)
+            selected_date = date.today() + timedelta(days=1)
         elif day == "after_tomorrow":
-              selected_date = date.today() + timedelta(days=2)
+            selected_date = date.today() + timedelta(days=2)
         machine_id = request.form.get("machine_id")
+        machine_status = db.execute("SELECT status from laundry_machines WHERE id = (?)",(machine_id,)).fetchone()
+        if not machine_status or machine_status["status"] == "broken":
+            return apology("somehow you have booked from a broken machine, if you are not a hacker, please contact us regard the topic")
+
         time_id = request.form.get("time_id")
         other_reservations = db.execute("SELECT * from laundry_requests WHERE user_id = (?) and date BETWEEN (?) and (?)",
-                                        (session['user_id'],date.today(),date.today() + timedelta(days=2))
-                    ).fetchall()
+                                        (session['user_id'],date.today(),date.today() + timedelta(days=2))).fetchall()
         if len(other_reservations) > 3:
             return apology("you can only reserve 3 times in 3 days :(")
         try:
@@ -309,6 +312,7 @@ def laundry(day):
             return apology("it is alreaday reserved :(")
         return redirect("/laundry")
     else:
+        #building info for card-grid 
         if day == "today":
              selected_date = date.today()
         elif day == "tomorrow":
@@ -317,7 +321,7 @@ def laundry(day):
               selected_date = date.today() + timedelta(days=2)
         db = get_db()
         laundry_machines = db.execute(
-            "SELECT * FROM laundry_machines WHERE dorm = (?) and status ='working'",(session['dorm'],)
+            "SELECT * FROM laundry_machines WHERE dorm = (?)",(session['dorm'],)
         ).fetchall()
         # I should have store dorm_id in session not name :( 
         dorm_row = db.execute(
@@ -332,17 +336,34 @@ def laundry(day):
              availability_dict[machine["id"]] = {}  
              for time in laundry_time_intervals:
                 starting_time = int(laundry_time_intervals[time][0:2])
-                now = datetime.now()
-                current_hour = now.hour
-                if day == "today" and current_hour >= starting_time:
+                if is_it_passed(date.today(),starting_time):
                     availability_dict[machine["id"]][time] = 2 #passed :(
                 else:
                     availability_dict[machine["id"]][time] = 1 #spot is free
 
         for r in requests:
-            availability_dict[r["machine_id"]][r["time_interval_id"]] = 0 #available
-            
-        return render_template("laundry.html",intervals = laundry_time_intervals,machines=laundry_machines,availability=availability_dict,)
+            if r["machine_id"] in availability_dict: 
+                availability_dict[r["machine_id"]][r["time_interval_id"]] = 0 #available
+        
+        # building users all past/current reservation table
+        user_requests = db.execute(
+            "SELECT r.id, r.date, r.time_interval_id, r.machine_id, m.machine_name,m.status FROM laundry_requests r JOIN laundry_machines m ON r.machine_id = m.id WHERE r.user_id = ? ORDER BY r.date DESC , r.time_interval_id DESC",(session["user_id"],)
+        ).fetchall()
+        return render_template("laundry.html",user_requests = user_requests, intervals = laundry_time_intervals,machines=laundry_machines,availability=availability_dict,is_it_passed=is_it_passed)
+
+@app.route("/cancel_reservation", methods=["POST"])
+def cancel_reservation():
+    request_id = request.form.get("request_id")
+    if not request_id:
+        return apology("error , try again")
+    db = get_db()
+    cursor = db.execute("DELETE FROM laundry_requests where id = ?",(request_id,))
+    db.commit()
+    if cursor.rowcount == 0:
+        apology("could not delete the reservation.")
+    return redirect("/laundry")
+
+
 @app.route("/add_machine", methods=["POST"])
 def add_machine():
     machine_name = request.form.get("machine_name")

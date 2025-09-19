@@ -6,7 +6,7 @@
 
 {% block main %}
     {%if session['role'] == "Student"%}
-    <h2 class = "h2">YOU CAN MAKE A RESERVATION FOR YOUR LAUNDRY HERE</h2>
+    <h2 class = "h2" style = "color: rgb(248, 248, 248);  text-shadow: 2px 2px 4px black;">YOU CAN MAKE A RESERVATION FOR YOUR LAUNDRY HERE</h2>
     <br>
 
       <div class="d-flex gap-2">
@@ -19,10 +19,10 @@
     <!-- Machine Card Example, I asked gpt for bootstap layout -->
    <div class="row g-3">
   {% for m in machines %}
-    <div class="col-12 col-md-6 col-lg-4 d-flex">
-      <div class="card shadow-sm w-100">
+    <div class="col-12 col-md-6 col-lg-4 d-flex {{ 'disabled-card' if m['status'] == 'broken' else '' }}">
+      <div class="card shadow-sm w-100" >
         <div class="card-header text-center fw-bold">
-          {{ m.machine_name }}
+          {{ m.machine_name }} {{'(Broken)' if m['status'] == 'broken'}}
         </div>
         <div class="card-body">
           <div class="list-group">
@@ -62,7 +62,62 @@
     </div>
   {% endfor %}
 </div>
+<br><br>
+<h2 style = "color: rgb(248, 248, 248);  text-shadow: 2px 2px 4px black;">Your Reservations</h2>
+<table class="table">
+  <thead>
+    <tr>
+      <th scope="col">#</th>
+      <th scope="col">machine</th>
+      <th scope="col">Date</th>
+      <th scope="col">Time Interval</th>
+      <th scope="col"></th>
+    </tr>
+  </thead>
+  <tbody>
+    {%for u in user_requests%}
+    <tr class="{{
+    'closed-text' if u['status'] == 'broken' else 'closed-text' if is_it_passed(u['date'], intervals[u['time_interval_id']]) else ''}}">
+      <th scope="row">{{loop.index}}</th>
+      <td>{{u['machine_name']}} {{'(machine is broken)' if u['status'] == 'broken' else '' }}</td>
+      <td> <span class="formatted-date" data-date="{{ u['date'] }}"></span> </td>
+      <td>{{intervals[u['time_interval_id']]}}</td>
+      <td>
+      {% if is_it_passed(u['date'], intervals[u['time_interval_id']]) %}
+        passed
+      {% else %}
+        <form method="POST" action="/cancel_reservation">
+          <input type="hidden" name="request_id" value="{{ u['id'] }}">
+          <button type="submit" class="btn btn-danger">Cancel Reservation</button>
+        </form>
+      {% endif %}
+</td>
+    </tr>
+    {%endfor%}
+  </tbody>
+</table>
+<script>
+document.querySelectorAll(".formatted-date").forEach(span => {
+    const rawDate = span.dataset.date;
+    const dateOnly = moment(rawDate, "YYYY-MM-DD");
+    const diffDays = dateOnly.startOf('day').diff(moment().startOf('day'), 'days');
 
+    let formatted;
+    if (diffDays === 0) {
+        formatted = "Today";
+    } else if (diffDays === 1) {
+        formatted = "Tomorrow";
+    } else if (diffDays === 2) {
+        formatted = "Day After Tomorrow";
+    } else if (diffDays === -1) {
+        formatted = "Yesterday";
+    } else {
+        formatted = dateOnly.format("DD/MM/YYYY");
+    }
+
+    span.textContent = formatted;
+});
+</script>
     {%else%}
         <form method = "POST" action ="/add_machine">
         <div class="mb-3 col-4" >
@@ -98,4 +153,5 @@
   </tbody>
 </table>
     {%endif%}
+
 {% endblock %} 
