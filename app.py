@@ -38,6 +38,15 @@ with app.app_context():
 @app.route("/")
 @login_required
 def index():
+    if session["role"] == "Officer":
+        db = get_db()
+        report_info = db.execute( "SELECT SUM(CASE WHEN status = 'open' THEN 1 ELSE 0 END) as open_reports FROM problems WHERE dorm = ?",(session["dorm"],)).fetchall()
+        users_info = db.execute( "SELECT COUNT(*) as total_users FROM userss WHERE dorm_number = ?",(session["dorm"],)).fetchall()
+        user_info = db.execute( "SELECT * FROM userss WHERE id = ?",(session["user_id"],)).fetchone()
+        laundry_requests = db.execute("SELECT COUNT(*) as total_requests FROM laundry_requests WHERE date = ?",(date.today(),)).fetchone()
+        laundry_requests_grouped = db.execute("SELECT lm.machine_name,  COUNT(*) as count FROM laundry_requests lr JOIN laundry_machines lm ON lr.machine_id = lm.id WHERE lr.date BETWEEN (?) and (?) AND lm.dorm = ? GROUP BY lm.id",(date.today(),date.today() + timedelta(days=7),session["dorm"],)).fetchall()
+        laundry_machines = db.execute("SELECT  COUNT(*) as total_machine, SUM(CASE WHEN status = 'working' THEN 1 ELSE 0 END) as working_machines FROM laundry_machines WHERE dorm = ?",(session["dorm"],)).fetchall()
+        return render_template("index.html",report_info=report_info,users_info=users_info,user_info=user_info,laundry_requests=laundry_requests,laundry_requests_grouped=laundry_requests_grouped,laundry_machines=laundry_machines) 
     return render_template("index.html")
 
 
@@ -160,23 +169,20 @@ def register():
 @login_required
 def report():
     if request.method == "POST":
-        if session["role"] == "Student":
-            description = request.form.get("description")
-            title = request.form.get("title") 
-            if not description or not title:
-                return apology("Fill in all fields", 400)
-            db = get_db()
+        description = request.form.get("description")
+        title = request.form.get("title") 
+        if not description or not title:
+            return apology("Fill in all fields", 400)
+        db = get_db()
              #Execute query safely
-            cursor = db.execute( "INSERT INTO problems (user_id,dorm,title,description) VALUES (?, ?, ?,?)",
-            (session["user_id"],session["dorm"], title,description,))
-            db.commit()
-            return redirect("/")
-        elif session["role"] == "Officer":
-            print("a")
+        cursor = db.execute( "INSERT INTO problems (user_id,dorm,title,description) VALUES (?, ?, ?,?)",
+        (session["user_id"],session["dorm"], title,description,))
+        db.commit()
+        return redirect("/")
     else:    
             db = get_db()
              #Execute query safely
-            cursor = db.execute( "SELECT problems.id as id, problems.title as title, problems.description as description, problems.status as status, problems.date_reported as date_reported,userss.email as email FROM problems JOIN userss ON userss.id = problems.user_id  WHERE dorm= ?",(session["dorm"],))
+            cursor = db.execute( "SELECT problems.id as id, problems.title as title, problems.description as description, problems.status as status, problems.date_reported as date_reported,userss.email as email FROM problems JOIN userss ON userss.id = problems.user_id  WHERE dorm= ? ORDER BY problems.date_reported DESC  ",(session["dorm"],))
             rows = cursor.fetchall()
             return render_template("report.html",rows=rows)
 @app.route("/change_status",methods=["POST"])

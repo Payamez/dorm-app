@@ -5,5 +5,124 @@
 {% endblock %}
 
 {% block main %}
-    <h2>hi</h2>
+   <div class="container mt-4">
+
+    
+    <div class="mb-4">
+        <h2 >Welcome Back, {{session['name']}}</h2>
+        <hr>
+    </div>
+
+    <!-- User Information -->
+    <div class="card mb-4 shadow-sm">
+        <div class="card-header bg-dark text-white">
+            <h3 class="mb-0">Your Information</h3>
+        </div>
+        <div class="card-body">
+            <ul class="list-group list-group-flush">
+                <li class="list-group-item"><strong>Name:</strong> {{ user_info['name'] }}</li>
+                <li class="list-group-item"><strong>Email:</strong> {{ user_info['email'] }}</li>
+                <li class="list-group-item"><strong>Dorm Number:</strong> {{ user_info['dorm_number'] }}</li>
+                <li class="list-group-item"><strong>Room Number:</strong> {{ user_info['room_number'] }}</li>
+            </ul>
+        </div>
+    </div>
+
+    {% if session['role'] == 'Officer' %}
+    <div class="card shadow-sm">
+        <div class="card-header bg-dark text-white">
+            <h3 class="mb-0">Report and Laundry Summary for {{ session['dorm'] }}</h3>
+        </div>
+        <div class="card-body">
+            <ul class="list-group list-group-flush">
+                <li class="list-group-item">
+                    <strong>Open Reports:</strong> 
+                    {{ report_info[0]['open_reports'] }}
+                </li>
+                <li class="list-group-item">
+                    <strong>Total Users in Dorm:</strong> 
+                    {{ users_info[0]['total_users'] }}
+                </li>
+                <li class="list-group-item">
+                    <strong>Laundry Requests Today:</strong> 
+                    {{ laundry_requests['total_requests'] }}
+                </li>
+                <li class="list-group-item">
+                    <strong>Laundry Requests by Machine (Past Week):</strong>
+                    <ul class="list-group mt-2">
+                        <!--CHATGPT I LOVE YOU-->
+                        <canvas id="laundryChart" style="max-width:400px; max-height:400px;"></canvas>
+
+                            <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+                            <script>
+                            // Labels from Jinja
+                            const labels = [
+                                {% for machine in laundry_requests_grouped %}
+                                '{{ machine["machine_name"] }}'{% if not loop.last %}, {% endif %}
+                                {% endfor %}
+                            ];
+
+                            // Data from Jinja
+                            const dataValues = [
+                                {% for machine in laundry_requests_grouped %}
+                                {{ machine["count"] }}{% if not loop.last %}, {% endif %}
+                                {% endfor %}
+                            ];
+
+                            const data = {
+                                labels: labels,
+                                datasets: [{
+                                label: 'Requests',
+                                data: dataValues,
+                                backgroundColor: [
+                                    '#667eea',
+                                    '#764ba2',
+                                    '#f093fb',
+                                    '#4facfe',
+                                    '#43e97b',
+                                    '#fa709a'
+                                ],
+                                hoverOffset: 4
+                                }]
+                            };
+
+                            const config = {
+                                type: 'doughnut',  // <-- change type to doughnut for pie chart look
+                                data: data,
+                                options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                plugins: {
+                                    legend: {
+                                    position: 'bottom'
+                                    }
+                                }
+                                }
+                            };
+
+                            const ctx = document.getElementById('laundryChart').getContext('2d');
+                            new Chart(ctx, config);
+                        </script>
+
+                    </ul>
+                </li>
+                <li class="list-group-item">
+                    <strong>Total Laundry Machines:</strong> 
+                    {{ laundry_machines[0]['total_machine'] }}
+                </li>
+                <li class="list-group-item">
+                    <strong>Working Laundry Machines:</strong> 
+                    {{ laundry_machines[0]['working_machines'] }}
+                </li>
+            </ul>
+        </div>
+    </div>
+    {% endif %}
+
+</div>
+
+
+
+
+
 {% endblock %}

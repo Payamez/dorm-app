@@ -82,5 +82,11 @@ def init_db():
     UNIQUE (dorm_id, machine_id, time_interval_id, date)
     );""")
 
+    cursor.execute("""CREATE TRIGGER IF NOT EXISTS cleanup_old_rows
+    AFTER INSERT ON laundry_requests
+    BEGIN DELETE FROM laundry_requests
+    WHERE date < DATE('now', '-30 day');
+    END;""")
+
     db.commit()
     db.close()
